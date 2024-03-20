@@ -1,34 +1,41 @@
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class LZ77 {
 
     public static List<Token> compress(String input) {
-        List<Token> compressed = new ArrayList<>();
+        List<Token> compressed = new LinkedList<>();
         int index = 0;
-
+    
         while (index < input.length()) {
             int length = 0;
             int offset = 0;
             for (int i = 1; i <= Math.min(index, 255); i++) {
-                String substr = input.substring(index - i, index);
-                int foundIndex = input.indexOf(substr, index);
+                int start = Math.max(index - i, 0); // Проверка на отрицательный старт
+                String substr = input.substring(start, index); 
+                int foundIndex = input.lastIndexOf(substr, index - 1);
                 if (foundIndex != -1 && foundIndex < index && i > length) {
                     length = i;
                     offset = index - foundIndex;
                 }
             }
-
+    
             if (length == 0) {
                 compressed.add(new Token(0, 0, input.charAt(index)));
                 index++;
             } else {
+                // Проверяем, что индекс символа в допустимом диапазоне строки
+                int charIndex = index + length - 1;
+                if (charIndex < input.length()) {
+                    compressed.add(new Token(offset, length, input.charAt(charIndex)));
+                } else {
+                    // Если индекс выходит за пределы строки, добавляем последний символ строки
+                    compressed.add(new Token(offset, length, input.charAt(input.length() - 1)));
+                }
                 index += length;
-                compressed.add(new Token(offset, length, input.charAt(index)));
-                index++;
             }
         }
-
+    
         return compressed;
     }
 
