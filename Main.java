@@ -1,13 +1,175 @@
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Scanner;
+import java.util.Comparator;
 
-// Класс Tag
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        String choice;
+        String sourceFile, resultFile;
+
+        while (true) {
+            System.out.println("Enter command (comp, decomp, size, equal, about, exit):");
+            choice = sc.next().trim();
+
+            switch (choice) {
+                case "comp":
+                    System.out.print("Source file name: ");
+                    sourceFile = sc.next().trim();
+                    System.out.print("Archive name: ");
+                    resultFile = sc.next().trim();
+                    compress(sourceFile, resultFile);
+                    break;
+
+                case "decomp":
+                    System.out.print("Archive name: ");
+                    sourceFile = sc.next().trim();
+                    System.out.print("Output file name: ");
+                    resultFile = sc.next().trim();
+                    decompress(sourceFile, resultFile);
+                    break;
+
+                case "size":
+                    System.out.print("File name: ");
+                    sourceFile = sc.next().trim();
+                    fileSize(sourceFile);
+                    break;
+
+                case "equal":
+                    System.out.print("First file name: ");
+                    String firstFile = sc.next().trim();
+                    System.out.print("Second file name: ");
+                    String secondFile = sc.next().trim();
+                    System.out.println(filesAreEqual(firstFile, secondFile) ? "Files are equal." : "Files are not equal.");
+                    break;
+
+                case "about":
+                    about();
+                    break;
+
+                case "exit":
+                    sc.close();
+                    return;
+
+                default:
+                    System.out.println("Unknown command. Try again.");
+                    break;
+            }
+        }
+    }
+
+    public static void compress(String sourceFile, String resultFile) {
+        try {
+            // Read the text from the source file
+            StringBuilder inputText = new StringBuilder();
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(new FileInputStream(sourceFile), Charset.forName("UTF-8")))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    inputText.append(line).append("\n");
+                }
+            }
+
+            // LZ77 compression
+            List<Tag> lz77Tags = LZ77.encode(inputText.toString());
+            BitSet lz77BitSet = LZ77.convertTagsToBits(lz77Tags);
+            byte[] lz77Bytes = lz77BitSet.toByteArray();
+
+            // Huffman compression
+            Huffman huffman = new Huffman();
+            byte[] huffmanCompressed = huffman.compress(lz77Bytes);
+
+            // Write the Huffman-compressed data to the output file
+            writeBinaryFile(huffmanCompressed, resultFile);
+
+            System.out.println("Compression complete.");
+        } catch (IOException e) {
+            System.err.println("Error during compression: " + e.getMessage());
+        }
+    }
+
+    public static void decompress(String sourceFile, String resultFile) {
+        try {
+            byte[] compressedData = readBinaryFile(sourceFile);
+
+            // Huffman decompression
+            Huffman huffman = new Huffman();
+            byte[] huffmanDecompressed = huffman.decompress(compressedData);
+
+            // LZ77 decompression
+            BitSet lz77BitSet = BitSet.valueOf(huffmanDecompressed);
+            List<Tag> lz77Tags = LZ77.convertBitsToTags(lz77BitSet);
+            String decompressedText = LZ77.decompressFromTags(lz77Tags);
+
+            writeDecompressedToFile(decompressedText, resultFile);
+
+            System.out.println("Decompression complete.");
+        } catch (IOException e) {
+            System.err.println("Error during decompression: " + e.getMessage());
+        }
+    }
+
+    public static void fileSize(String sourceFile) {
+        try {
+            long size = Files.size(Paths.get(sourceFile));
+            System.out.println("File size: " + size + " bytes");
+        } catch (IOException e) {
+            System.err.println("Error getting file size: " + e.getMessage());
+        }
+    }
+
+    public static boolean filesAreEqual(String firstFile, String secondFile) {
+        try {
+            byte[] content1 = Files.readAllBytes(Paths.get(firstFile));
+            byte[] content2 = Files.readAllBytes(Paths.get(secondFile));
+            return Arrays.equals(content1, content2);
+        } catch (IOException e) {
+            System.err.println("Error comparing files: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static void about() {
+        System.out.println("231RDB204 Daniels Stulpe 5.gupa");
+    }
+
+    private static byte[] readBinaryFile(String filename) throws IOException {
+        return Files.readAllBytes(Paths.get(filename));
+    }
+
+    private static void writeBinaryFile(byte[] data, String filename) throws IOException {
+        Files.write(Paths.get(filename), data);
+    }
+
+    private static void writeDecompressedToFile(String decompressedText, String resultFile) {
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(resultFile), Charset.forName("UTF-8")))) {
+            writer.write(decompressedText);
+        } catch (IOException e) {
+            System.err.println("Error writing decompressed text to file: " + e.getMessage());
+        }
+    }
+}
+
+// Tag class
 class Tag {
     private final short offset;
     private final short length;
@@ -48,7 +210,7 @@ class Tag {
 
         BitSet bitSet = new BitSet(totalBitsLength);
 
-        // Сдвиг offset и length
+        // Shift for offset and length
         int index = 0;
         for (int i = 0; i < OFFSET_LENGTH_BITS; i++, index++) {
             bitSet.set(index, ((offset >> i) & 1) != 0);
@@ -57,10 +219,10 @@ class Tag {
             bitSet.set(index, ((length >> i) & 1) != 0);
         }
 
-        // Флаг для символа (extended или нет)
+        // Flag for the character type (extended or not)
         bitSet.set(index++, isExtended);
 
-        // Символ (обычный или расширенный)
+        // Character (standard or extended)
         if (isExtended) {
             byte[] charBytes = Character.toString(next).getBytes(Charset.forName("UTF-8"));
             for (byte b : charBytes) {
@@ -80,27 +242,27 @@ class Tag {
     public static Tag fromBits(BitSet bitSet) {
         int offset = 0;
         int length = 0;
-        boolean isExtended = bitSet.get(Tag.OFFSET_LENGTH_BITS * 2); // Флаг для определения типа символа
+        boolean isExtended = bitSet.get(OFFSET_LENGTH_BITS * 2); // Flag for character type
 
-        // Получаем offset
-        for (int i = 0; i < Tag.OFFSET_LENGTH_BITS; i++) {
+        // Read offset
+        for (int i = 0; i < OFFSET_LENGTH_BITS; i++) {
             if (bitSet.get(i)) {
                 offset |= (1 << i);
             }
         }
 
-        // Получаем length
-        for (int i = Tag.OFFSET_LENGTH_BITS; i < Tag.OFFSET_LENGTH_BITS * 2; i++) {
+        // Read length
+        for (int i = OFFSET_LENGTH_BITS; i < OFFSET_LENGTH_BITS * 2; i++) {
             if (bitSet.get(i)) {
-                length |= (1 << (i - Tag.OFFSET_LENGTH_BITS));
+                length |= (1 << (i - OFFSET_LENGTH_BITS));
             }
         }
 
-        int charStart = Tag.OFFSET_LENGTH_BITS * 2 + Tag.CHAR_FLAG_BITS;
+        int charStart = OFFSET_LENGTH_BITS * 2 + CHAR_FLAG_BITS;
         char next = '\0';
 
         if (isExtended) {
-            byte[] charBytes = new byte[3]; // 3 байта для 24-битного символа
+            byte[] charBytes = new byte[3]; // 3 bytes for 24-bit character
             for (int i = 0; i < 3; i++) {
                 byte charByte = 0;
                 for (int j = 0; j < 8; j++) {
@@ -120,14 +282,15 @@ class Tag {
             }
             next = (char) simpleChar;
         }
+
         return new Tag((short) offset, (short) length, next, isExtended);
     }
 }
 
-// Класс LZ77
+// LZ77 class
 class LZ77 {
-    private static final int WINDOW_SIZE = 32000;
-    private static final int MAX_LENGTH = 500;
+    private static final int WINDOW_SIZE = 32767;
+    private static final int MAX_LENGTH = 1000;
 
     public static List<Tag> encode(String text) {
         List<Tag> result = new ArrayList<>();
@@ -201,135 +364,208 @@ class LZ77 {
                 BitSet tagBitSet = bitSet.get(currentPosition, currentPosition + Tag.OFFSET_LENGTH_BITS * 2);
                 tags.add(Tag.fromBits(tagBitSet));
                 currentPosition += Tag.OFFSET_LENGTH_BITS * 2;
-                break; // Прерываем цикл, чтобы избежать выхода за пределы
+                break;
             }
         }
-
         return tags;
-        }
-
-    public static void writeEncodedToFile(List<Tag> tags, String filename) {
-        BitSet encodedBits = convertTagsToBits(tags);
-        byte[] compressedBytes = encodedBits.toByteArray();
-
-        try {
-            Files.write(Paths.get(filename), compressedBytes);
-            System.out.println("Сжатый текст успешно записан в файл " + filename);
-        } catch (IOException ex) {
-            System.err.println("Ошибка при записи в файл: " + ex.getMessage());
-        }
     }
 
-    public static String decompressFromFile(String filename) {
-        try {
-            byte[] compressedBytes = Files.readAllBytes(Paths.get(filename));
-            if (compressedBytes.length == 0) {
-                System.err.println("Ошибка: файл пустой.");
-                return "";
-            }
+    public static String decompressFromTags(List<Tag> tags) {
+        StringBuilder decompressedText = new StringBuilder();
 
-            BitSet tagsBitSet = BitSet.valueOf(compressedBytes);
-            List<Tag> tags = convertBitsToTags(tagsBitSet);
-
-            if (tags.isEmpty()) {
-                System.err.println("Ошибка: не удалось получить теги из битов.");
-                return "";
-            }
-
-            StringBuilder decompressedText = new StringBuilder();
-
-            for (Tag tag : tags) {
-                int start = decompressedText.length() - tag.getOffset();
-                for (int i = 0; i < tag.getLength(); i++) {
-                    if (start + i < decompressedText.length()) {
-                        decompressedText.append(decompressedText.charAt(start + i));
-                    }
-                }
-                if (tag.getNext() != '\0') {
-                    decompressedText.append(tag.getNext());
+        for (Tag tag : tags) {
+            int start = decompressedText.length() - tag.getOffset();
+            for (int i = 0; i < tag.getLength(); i++) {
+                if (start + i < decompressedText.length()) {
+                    decompressedText.append(decompressedText.charAt(start + i));
                 }
             }
-
-            return decompressedText.toString();
-
-        } catch (IOException ex) {
-            System.err.println("Ошибка при чтении файла: " + ex.getMessage());
-            return "";
+            if (tag.getNext() != '\0') {
+                decompressedText.append(tag.getNext());
+            }
         }
+
+        // Remove trailing newline characters from decompressed text
+        while (decompressedText.length() > 0 &&
+                (decompressedText.charAt(decompressedText.length() - 1) == '\n' ||
+                        decompressedText.charAt(decompressedText.length() - 1) == '\r')) {
+            decompressedText.deleteCharAt(decompressedText.length() - 1);
+        }
+
+        return decompressedText.toString();
     }
 }
 
-// Класс Main
-public class Main {
-    public static void compress(String sourceFile, String archiveFile) {
-        try {
-            StringBuilder inputText = new StringBuilder();
-            try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(new FileInputStream(sourceFile), Charset.forName("UTF-8")))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    inputText.append(line).append("\n");
-                }
-            }
 
-            List<Tag> encoded = LZ77.encode(inputText.toString());
-            LZ77.writeEncodedToFile(encoded, archiveFile);
+// Huffman class
+class Node implements Comparable<Node> {
+    int frequency;
+    byte value;
+    Node left;
+    Node right;
 
-            System.out.println("Файл успешно сжат и сохранен в архив " + archiveFile);
-        } catch (IOException ex) {
-            System.err.println("Ошибка при сжатии: " + ex.getMessage());
+    public Node(int frequency, byte value) {
+        this.frequency = frequency;
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
+
+    public Node(int frequency, Node left, Node right) {
+        this.frequency = frequency;
+        this.left = left;
+        this.right = right;
+    }
+
+    public boolean isLeaf() {
+        return left == null && right == null;
+    }
+
+    @Override
+    public int compareTo(Node other) {
+        return Integer.compare(this.frequency, other.frequency);
+    }
+}
+
+class Huffman {
+    private Node root;
+    private Map<Byte, String> huffmanCodeMap = new HashMap<>();
+
+    public void buildTree(byte[] data) {
+        Map<Byte, Integer> frequencyMap = new HashMap<>();
+        for (byte b : data) {
+            frequencyMap.put(b, frequencyMap.getOrDefault(b, 0) + 1);
+        }
+
+        PriorityQueue<Node> priorityQueue = new PriorityQueue<>(Comparator.comparingInt(n -> n.frequency));
+        for (Map.Entry<Byte, Integer> entry : frequencyMap.entrySet()) {
+            priorityQueue.add(new Node(entry.getValue(), entry.getKey()));
+        }
+
+        while (priorityQueue.size() > 1) {
+            Node left = priorityQueue.poll();
+            Node right = priorityQueue.poll();
+            Node newNode = new Node(left.frequency + right.frequency, left, right);
+            priorityQueue.add(newNode);
+        }
+
+        root = priorityQueue.poll();
+        buildHuffmanCode(root, "");
+    }
+
+    private void buildHuffmanCode(Node node, String code) {
+        if (node.isLeaf()) {
+            huffmanCodeMap.put(node.value, code);
+        } else {
+            buildHuffmanCode(node.left, code + "0");
+            buildHuffmanCode(node.right, code + "1");
         }
     }
 
-    public static void decompress(String sourceFile, String outputFile) {
-        try {
-            String decompressedText = LZ77.decompressFromFile(sourceFile);
+    public byte[] compress(byte[] data) {
+        buildTree(data); // Ensure the Huffman tree is built
 
-            if (!decompressedText.isEmpty()) {
-                try (BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(new FileOutputStream(outputFile), Charset.forName("UTF-8")))) {
-                    writer.write(decompressedText);
-                }
+        byte[] serializedTree = serializeTree(root);
 
-                System.out.println("Файл успешно декомпрессирован и сохранен в " + outputFile);
+        StringBuilder bitStream = new StringBuilder();
+        for (byte b : data) {
+            bitStream.append(huffmanCodeMap.get(b));
+        }
+
+        int numBits = bitStream.length();
+        int numBytes = (int) Math.ceil(numBits / 8.0);
+
+        byte[] compressedData = new byte[serializedTree.length + 4 + numBytes];
+
+        // Copy the serialized tree to the beginning of the compressed data
+        System.arraycopy(serializedTree, 0, compressedData, 0, serializedTree.length);
+
+        // Store the number of bits used in the bit stream
+        int offset = serializedTree.length;
+        compressedData[offset] = (byte) ((numBits >> 24) & 0xFF);
+        compressedData[offset + 1] = (byte) ((numBits >> 16) & 0xFF);
+        compressedData[offset + 2] = (byte) ((numBits >> 8) & 0xFF);
+        compressedData[offset + 3] = (byte) (numBits & 0xFF);
+
+        // Write the bit stream to the compressed data
+        for (int i = 0; i < numBits; i++) {
+            int byteIndex = offset + 4 + (i / 8);
+            int bitIndex = 7 - (i % 8);
+            if (bitStream.charAt(i) == '1') {
+                compressedData[byteIndex] |= (1 << bitIndex);
+            }
+        }
+
+        return compressedData;
+    }
+
+    public byte[] decompress(byte[] compressedData) {
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(compressedData);
+        root = deserializeTree(inputStream);
+
+        // Read the number of bits in the compressed data
+        int numBits = ((inputStream.read() & 0xFF) << 24) |
+                      ((inputStream.read() & 0xFF) << 16) |
+                      ((inputStream.read() & 0xFF) << 8) |
+                      (inputStream.read() & 0xFF);
+
+        List<Byte> decompressedList = new ArrayList<>();
+        Node currentNode = root;
+
+        int offset = 4 + serializeTree(root).length; // Correct offset calculation
+
+        for (int i = 0; i < numBits; i++) {
+            int byteIndex = offset + (i / 8);
+            int bitIndex = 7 - (i % 8);
+            boolean bit = (compressedData[byteIndex] & (1 << bitIndex)) != 0;
+
+            if (bit) {
+                currentNode = currentNode.right;
             } else {
-                System.err.println("Ошибка: декомпрессированный текст пуст.");
+                currentNode = currentNode.left;
             }
-        } catch (IOException ex) {
-            System.err.println("Ошибка при декомпрессии: " + ex.getMessage());
+
+            if (currentNode.isLeaf()) {
+                decompressedList.add(currentNode.value);
+                currentNode = root;
+            }
+        }
+
+        // Convert the list of bytes into a byte array
+        byte[] decompressedData = new byte[decompressedList.size()];
+        for (int i = 0; i < decompressedList.size(); i++) {
+            decompressedData[i] = decompressedList.get(i);
+        }
+
+        return decompressedData;
+    }
+
+    private byte[] serializeTree(Node node) {
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        serializeTreeHelper(node, byteStream);
+        return byteStream.toByteArray();
+    }
+
+    private void serializeTreeHelper(Node node, ByteArrayOutputStream byteStream) {
+        if (node.isLeaf()) {
+            byteStream.write(1); // Indicates a leaf node
+            byteStream.write(node.value); // Leaf's byte value
+        } else {
+            byteStream.write(0); // Internal node indicator
+            serializeTreeHelper(node.left, byteStream);
+            serializeTreeHelper(node.right, byteStream);
         }
     }
 
-    public static void main(String[] args) {
-        try (Scanner sc = new Scanner(System.in)) {
-            String sourceFile, resultFile;
-
-            System.out.println("Выберите действие:");
-            System.out.println("(comp для сжатия, decomp для декомпрессии): ");
-            String choiceStr = sc.next();
-
-            switch (choiceStr) {
-                case "comp":
-                    System.out.print("Имя исходного файла для сжатия: ");
-                    sourceFile = sc.next();
-                    System.out.print("Имя архива: ");
-                    resultFile = sc.next();
-                    compress(sourceFile, resultFile);
-                    break;
-
-                case "decomp":
-                    System.out.print("Имя архива: ");
-                    sourceFile = sc.next();
-                    System.out.print("Имя файла для сохранения: ");
-                    resultFile = sc.next();
-                    decompress(sourceFile, resultFile);
-                    break;
-
-                default:
-                    System.err.println("Неверный выбор.");
-            }
-        } catch (Exception ex) {
-            System.err.println("Произошла ошибка: " + ex.getMessage());
+    private Node deserializeTree(ByteArrayInputStream inputStream) {
+        int marker = inputStream.read();
+        if (marker == 1) {
+            byte value = (byte) inputStream.read();
+            return new Node(0, value); // Leaf node
+        } else {
+            Node left = deserializeTree(inputStream);
+            Node right = deserializeTree(inputStream);
+            return new Node(0, left, right); // Internal node
         }
     }
 }
