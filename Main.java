@@ -36,7 +36,6 @@ public class Main {
                     System.out.print("archive name: ");
                     resultFile = sc.next().trim();
                     compress(sourceFile, resultFile);
-                    long end = System.currentTimeMillis();
                     break;
 
                 case "decomp":
@@ -78,7 +77,6 @@ public class Main {
 
     public static void compress(String sourceFile, String resultFile) {
         try {
-            long start = System.currentTimeMillis();
             // Read text from the source file
             StringBuilder inputText = new StringBuilder();
             try (BufferedReader br = new BufferedReader(
@@ -102,9 +100,6 @@ public class Main {
             writeBinaryFile(huffmanCompressed, resultFile);
 
             System.out.println("Compression complete.");
-            long end = System.currentTimeMillis();
-            long elapsedTime = end - start;
-            System.out.println(elapsedTime);
         } catch (IOException e) {
             System.err.println("Error during compression: " + e.getMessage());
         }
@@ -112,7 +107,6 @@ public class Main {
 
     public static void decompress(String sourceFile, String resultFile) {
         try {
-            long start = System.currentTimeMillis();
             // Read the compressed data from the file
             byte[] compressedData = readBinaryFile(sourceFile);
 
@@ -129,9 +123,6 @@ public class Main {
             writeDecompressedToFile(decompressedText, resultFile);
 
             System.out.println("Decompression complete.");
-            long end = System.currentTimeMillis();
-            long elapsedTime = end - start;
-            System.out.println(elapsedTime);
         } catch (IOException e) {
             System.err.println("Error during decompression: " + e.getMessage());
         }
