@@ -68,7 +68,7 @@ The following examples demonstrate some of the available commands:
 
 
 # Included Files
-Along with Main.java, the repository contains an examples folder with the following files:
+Along with Main.java, the repository contains an [examples](./examples) folder with the following files:
 
 - Java.html
 - JavaScript.html
