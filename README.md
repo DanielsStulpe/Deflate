@@ -58,12 +58,24 @@ The following examples demonstrate some of the available commands:
 # Included Files
 Along with Main.java, the repository contains an examples folder with the following files:
 
-- File1.html
-- File2.html
-- File3.html
-- File4.html
+- Java.html
+- JavaScript.html
+- RTU.html
+- Rainis.html
+- MonteCarlo.html
   
 These files can be used to test and demonstrate the functionality of the compression and decompression features.
+
+# Results
+
+| File name       | File size (KB) | Comp file size (KB) | Comp ratio | Comp coef. | Comp time (ms) | Decomp time (ms) |
+|-----------------|----------------|---------------------|------------|------------|----------------|------------------|
+| Java.html       | 80.479         | 33.356              | 58.55      | 2.41       | 663            | 67               |
+| JavaScript.html | 344.523        | 107.19              | 68.89      | 3.21       | 2544           | 64               |
+| RTU.html        | 83.069         | 30.93               | 62.77      | 2.69       | 518            | 14               |
+| Rainis.html     | 206.694        | 57.458              | 72.20      | 3.60       | 1321           | 17               |
+| MonteCarlo.html | 612.88         | 100.359             | 83.63      | 6.11       | 2331           | 23               |
+
 
 # Credits
 This project was developed by Daniels Stulpe, a student at Riga Technical University.
