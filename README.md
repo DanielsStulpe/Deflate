@@ -8,22 +8,27 @@ This Java project implements file compression and decompression using the Deflat
 - File Equality Check (`equal`): Checks if two files are identical.
 - About Information (`about`): Displays information about the developer.
 
-# How to Run
-To use this project, ensure you have Java installed on your machine. You can run the Main.java file using your preferred Java IDE or the command line. Here are the steps to run the program from the command line:
+# Results
 
-### 1. Compile the Java program:
+| File name       | File size (KB) | Comp. file size (KB) | Comp. ratio | Comp. coef. | Comp. time (ms) | Decomp. time (ms) |
+|-----------------|----------------|----------------------|-------------|-------------|-----------------|-------------------|
+| Java.html       | 80.479         | 33.356               | 58.55 %     | 2.41        | 663             | 67                |
+| JavaScript.html | 344.523        | 107.19               | 68.89 %     | 3.21        | 2544            | 64                |
+| RTU.html        | 83.069         | 30.93                | 62.77 %     | 2.69        | 518             | 14                |
+| Rainis.html     | 206.694        | 57.458               | 72.20 %     | 3.60        | 1321            | 17                |
+| MonteCarlo.html | 612.88         | 100.359              | 83.63 %     | 6.11        | 2331            | 23                |
 
-```
-javac Main.java
-```
 
-### 2. Run the compiled Java program:
+# Included Files
+Along with Main.java, the repository contains an [examples](./examples) folder with the following files:
 
-```
-javac Main.java
-```
-
-### 3. Follow the prompts in the command-line interface to use the available features.
+- Java.html
+- JavaScript.html
+- RTU.html
+- Rainis.html
+- MonteCarlo.html
+  
+These files can be used to test and demonstrate the functionality of the compression and decompression features.
 
 # Usage Examples
 The following examples demonstrate some of the available commands:
@@ -56,27 +61,22 @@ The following examples demonstrate some of the available commands:
   - Description: Displays information about the developer.
 
 
-# Results
+# How to Run
+To use this project, ensure you have Java installed on your machine. You can run the Main.java file using your preferred Java IDE or the command line. Here are the steps to run the program from the command line:
 
-| File name       | File size (KB) | Comp file size (KB) | Comp ratio | Comp coef. | Comp time (ms) | Decomp time (ms) |
-|-----------------|----------------|---------------------|------------|------------|----------------|------------------|
-| Java.html       | 80.479         | 33.356              | 58.55 %    | 2.41       | 663            | 67               |
-| JavaScript.html | 344.523        | 107.19              | 68.89 %    | 3.21       | 2544           | 64               |
-| RTU.html        | 83.069         | 30.93               | 62.77 %    | 2.69       | 518            | 14               |
-| Rainis.html     | 206.694        | 57.458              | 72.20 %    | 3.60       | 1321           | 17               |
-| MonteCarlo.html | 612.88         | 100.359             | 83.63 %    | 6.11       | 2331           | 23               |
+### 1. Compile the Java program:
 
+```
+javac Main.java
+```
 
-# Included Files
-Along with Main.java, the repository contains an [examples](./examples) folder with the following files:
+### 2. Run the compiled Java program:
 
-- Java.html
-- JavaScript.html
-- RTU.html
-- Rainis.html
-- MonteCarlo.html
-  
-These files can be used to test and demonstrate the functionality of the compression and decompression features.
+```
+javac Main.java
+```
+
+### 3. Follow the prompts in the command-line interface to use the available features.
 
 
 # Credits
