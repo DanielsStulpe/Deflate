@@ -61,23 +61,6 @@ The following examples demonstrate some of the available commands:
   - Description: Displays information about the developer.
 
 
-# How to Run
-To use this project, ensure you have Java installed on your machine. You can run the Main.java file using your preferred Java IDE or the command line. Here are the steps to run the program from the command line:
-
-### 1. Compile the Java program:
-
-```
-javac Main.java
-```
-
-### 2. Run the compiled Java program:
-
-```
-javac Main.java
-```
-
-### 3. Follow the prompts in the command-line interface to use the available features.
-
 
 # Credits
 This project was developed by Daniels Stulpe, a student at Riga Technical University.
